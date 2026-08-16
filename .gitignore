@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Secrets - never push these to GitHub
+.env
+.env.local
+
+# Misc
+*.log
+.DS_Store
