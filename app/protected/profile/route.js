@@ -1,10 +1,10 @@
 // Purpose: GET /protected/profile
-// A locked door. The client must send their JWT in the request header:
+// A locked door with a guard. The client must send their JWT in the header:
 //   Authorization: Bearer <token>
-// For now we only check that a token was sent. Verifying that the token is
-// real happens in the next stage.
+// We ask Supabase whether that token is real before returning any user data.
 
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
@@ -28,8 +28,28 @@ export async function GET(request) {
     );
   }
 
+  // The guard inspects the pass: Supabase checks the signature and expiry.
+  const { data, error } = await supabase.auth.getUser(token);
+
+  // Expired, tampered with, or simply not a real token.
+  if (error || !data.user) {
+    return NextResponse.json(
+      { error: 'Invalid or expired token' },
+      { status: 401 }
+    );
+  }
+
+  // Token is valid, so it is safe to hand over this user's private details.
   return NextResponse.json(
-    { message: 'Token received', token },
+    {
+      message: 'This is your private profile.',
+      profile: {
+        id: data.user.id,
+        email: data.user.email,
+        created_at: data.user.created_at,
+        last_sign_in_at: data.user.last_sign_in_at,
+      },
+    },
     { status: 200 }
   );
 }
